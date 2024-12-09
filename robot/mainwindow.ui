@@ -105,7 +105,7 @@
      <string>Robot is currently:</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_4">
+   <widget class="QLabel" name="runningRobot">
     <property name="geometry">
      <rect>
       <x>280</x>

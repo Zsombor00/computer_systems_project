@@ -18,6 +18,10 @@ public:
 private slots:
     void on_closeButton_clicked();
 
+public slots:
+    void updateLabel(const QString &newText); // Slot for updating QLabel text
+
+
 private:
     Ui::MainWindow *ui;
 };
