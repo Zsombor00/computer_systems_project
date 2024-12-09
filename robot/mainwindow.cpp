@@ -24,3 +24,21 @@ void MainWindow::updateLabel(const QString &newText)
     ui->label->setText(newText);
 }
 
+
+void MainWindow::on_regularButton_clicked()
+{
+    printf("Go regular mode plz");
+}
+
+
+void MainWindow::on_fastButton_clicked()
+{
+    printf("Increase the robot speed plz");
+}
+
+
+void MainWindow::on_emergencyStop_clicked()
+{
+    printf("Kill the ROS program, make the robot stop!!!");
+}
+

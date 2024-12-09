@@ -18,6 +18,12 @@ public:
 private slots:
     void on_closeButton_clicked();
 
+    void on_regularButton_clicked();
+
+    void on_fastButton_clicked();
+
+    void on_emergencyStop_clicked();
+
 public slots:
     void updateLabel(const QString &newText); // Slot for updating QLabel text
 

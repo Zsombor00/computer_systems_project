@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="emergencyStop">
     <property name="geometry">
      <rect>
       <x>320</x>
@@ -27,7 +27,7 @@
      <string>Emergency Stop</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_2">
+   <widget class="QPushButton" name="fastButton">
     <property name="geometry">
      <rect>
       <x>450</x>
@@ -40,7 +40,7 @@
      <string>Fast speed</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_3">
+   <widget class="QPushButton" name="regularButton">
     <property name="geometry">
      <rect>
       <x>590</x>
@@ -66,7 +66,7 @@
      <string>Speed mode for the robot</string>
     </property>
    </widget>
-   <widget class="QProgressBar" name="progressBar">
+   <widget class="QProgressBar" name="progressBarRobot7">
     <property name="geometry">
      <rect>
       <x>120</x>
