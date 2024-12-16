@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mode Selector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 100px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+        }
+        .emergency {
+            background-color: red;
+            color: white;
+        }
+        .regular {
+            background-color: green;
+            color: white;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Select Speed Mode</h1>
+    <button class="emergency" onclick="setEmergencyMode()">Emergency Mode</button>
+    <button class="regular" onclick="setRegularMode()">Regular Mode</button>
+
+    <p id="modeStatus" style="margin-top: 30px; font-size: 20px; color: #555;"></p>
+
+    <script>
+        function setEmergencyMode() {
+            document.getElementById('modeStatus').innerText = "Emergency Mode is now active!";
+            document.body.style.backgroundColor = "#FFCCCC"; // Set a red-ish background for emergency
+        }
+
+        function setRegularMode() {
+            // Send a request to the server to run the script
+            fetch("http://localhost:8001/run-regular-mode")
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    } else {
+                        throw new Error("Failed to execute script.");
+                    }
+                })
+                .then(data => {
+                    document.getElementById('modeStatus').innerText = data;
+                    document.body.style.backgroundColor = "#CCFFCC"; // Set a green-ish background for regular
+                })
+                .catch(err => {
+                    document.getElementById('modeStatus').innerText = err;
+                });
+        }
+    </script>
+</body>
+</html>

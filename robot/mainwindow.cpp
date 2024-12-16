@@ -7,6 +7,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     ui->runningRobot->setText("Robot: Not Running (Dynamically)");
+    ui->logging->setText("This wil be dynamic Logging");
 }
 
 MainWindow::~MainWindow()
