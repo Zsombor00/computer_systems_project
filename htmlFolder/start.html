@@ -37,11 +37,13 @@
     <button class="regular" onclick="setRegularMode()">Regular Mode</button>
 
     <p id="modeStatus" style="margin-top: 30px; font-size: 20px; color: #555;"></p>
+    <p id="robotStatus">Robot is currently: Not moving</p>
 
     <script>
         function setEmergencyMode() {
             document.getElementById('modeStatus').innerText = "Emergency Mode is now active!";
             document.body.style.backgroundColor = "#FFCCCC";
+            document.getElementById('robotStatus').innerText = "Robot is currently: Moving";
         
             // Send a request to the server to run the emergency script
             fetch("http://localhost:8001/run-emergency-mode")
@@ -54,15 +56,20 @@
                 })
                 .then(data => {
                     document.getElementById('modeStatus').innerText = data;
+                    document.getElementById('robotStatus').innerText = "Robot is currently: Not moving";
+                    document.body.style.backgroundColor = "#FFFFFF";
                 })
                 .catch(err => {
                     document.getElementById('modeStatus').innerText = err;
+                    document.getElementById('robotStatus').innerText = "Robot is currently: Not moving";
+                    document.body.style.backgroundColor = "#FFFFFF";
                 });
         }
 
         function setRegularMode() {
             document.getElementById('modeStatus').innerText = "Regular Mode is now active!";
             document.body.style.backgroundColor = "#CCFFCC"; 
+            document.getElementById('robotStatus').innerText = "Robot is currently: Moving";
             // Send a request to the server to run the script
             fetch("http://localhost:8001/run-regular-mode")
                 .then(response => {
@@ -74,9 +81,13 @@
                 })
                 .then(data => {
                     document.getElementById('modeStatus').innerText = data;
+                    document.getElementById('robotStatus').innerText = "Robot is currently: Not moving";
+                    document.body.style.backgroundColor = "#FFFFFF";
                 })
                 .catch(err => {
                     document.getElementById('modeStatus').innerText = err;
+                    document.getElementById('robotStatus').innerText = "Robot is currently: Not moving";
+                    document.body.style.backgroundColor = "#FFFFFF";
                 });
         }
     </script>
