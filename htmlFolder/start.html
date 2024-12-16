@@ -41,10 +41,28 @@
     <script>
         function setEmergencyMode() {
             document.getElementById('modeStatus').innerText = "Emergency Mode is now active!";
-            document.body.style.backgroundColor = "#FFCCCC"; // Set a red-ish background for emergency
+            document.body.style.backgroundColor = "#FFCCCC";
+        
+            // Send a request to the server to run the emergency script
+            fetch("http://localhost:8001/run-emergency-mode")
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    } else {
+                        throw new Error("Failed to execute emergency script.");
+                    }
+                })
+                .then(data => {
+                    document.getElementById('modeStatus').innerText = data;
+                })
+                .catch(err => {
+                    document.getElementById('modeStatus').innerText = err;
+                });
         }
 
         function setRegularMode() {
+            document.getElementById('modeStatus').innerText = "Regular Mode is now active!";
+            document.body.style.backgroundColor = "#CCFFCC"; 
             // Send a request to the server to run the script
             fetch("http://localhost:8001/run-regular-mode")
                 .then(response => {
@@ -56,7 +74,6 @@
                 })
                 .then(data => {
                     document.getElementById('modeStatus').innerText = data;
-                    document.body.style.backgroundColor = "#CCFFCC"; // Set a green-ish background for regular
                 })
                 .catch(err => {
                     document.getElementById('modeStatus').innerText = err;

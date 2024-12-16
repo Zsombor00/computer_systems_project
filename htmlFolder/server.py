@@ -6,9 +6,8 @@ class MyHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/run-regular-mode":
             try:
-                # Run the Python script (adjust filename as needed)
-                #os.system("python3 myscript.py")
-                os.system("bash /home/ubuntu/group2/myagv_ros/src/htmlFolder/run_ros.sh")
+                # Run the bash script for regular speed mode
+                os.system("bash /home/ubuntu/group2/myagv_ros/src/htmlFolder/regular_run.sh")
                 # Send a response back to the browser
                 self.send_response(200)
                 self.end_headers()
@@ -18,6 +17,18 @@ class MyHandler(SimpleHTTPRequestHandler):
                 self.send_response(500)
                 self.end_headers()
                 self.wfile.write(f"Error running script: {e}".encode())
+        elif self.path == "/run-emergency-mode":
+            try:
+                # Run the bash script for emergency speed mode
+                os.system("bash /home/ubuntu/group2/myagv_ros/src/htmlFolder/emergency_run.sh")
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"Emergency mode script executed successfully!")
+            except Exception as e:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(f"Error running emergency mode script: {e}".encode())
+        
         else:
             # Serve other files like the HTML
             super().do_GET()
