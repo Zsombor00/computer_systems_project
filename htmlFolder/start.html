@@ -19,12 +19,26 @@
             border-radius: 5px;
         }
         .emergency {
-            background-color: red;
-            color: white;
+            background-color: #FFA500;
+            color: black;
         }
         .regular {
             background-color: green;
+            color: black;
+        }
+        .stop {
+            background-color: darkred;
             color: white;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 20px 40px;
+            font-size: 20px;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: block;
         }
         button:hover {
             opacity: 0.9;
@@ -38,6 +52,8 @@
 
     <p id="modeStatus" style="margin-top: 30px; font-size: 20px; color: #555;"></p>
     <p id="robotStatus">Robot is currently: Not moving</p>
+
+    <button class="stop" onclick="emergencyStop()">Emergency Stop!</button>
 
     <script>
         function setEmergencyMode() {
@@ -60,7 +76,7 @@
                     document.body.style.backgroundColor = "#FFFFFF";
                 })
                 .catch(err => {
-                    document.getElementById('modeStatus').innerText = err;
+                    //document.getElementById('modeStatus').innerText = err;
                     document.getElementById('robotStatus').innerText = "Robot is currently: Not moving";
                     document.body.style.backgroundColor = "#FFFFFF";
                 });
@@ -85,8 +101,32 @@
                     document.body.style.backgroundColor = "#FFFFFF";
                 })
                 .catch(err => {
-                    document.getElementById('modeStatus').innerText = err;
+                    //document.getElementById('modeStatus').innerText = err;
                     document.getElementById('robotStatus').innerText = "Robot is currently: Not moving";
+                    document.body.style.backgroundColor = "#FFFFFF";
+                });
+        }
+
+        function emergencyStop() {
+            document.getElementById('modeStatus').innerText = "Emergency Stop Activated!";
+            //document.body.style.backgroundColor = "#FF0000"; // Red for immediate stop
+            document.getElementById('robotStatus').innerText = "Robot is currently: Stopped";
+            
+            // Send a request to the server to stop the robot
+            fetch("http://localhost:8001/emergency-stop")
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    } else {
+                        throw new Error("Failed to execute emergency stop.");
+                    }
+                })
+                .then(data => {
+                    document.getElementById('modeStatus').innerText = data;
+                    document.body.style.backgroundColor = "#FFFFFF";
+                })
+                .catch(err => {
+                   // document.getElementById('modeStatus').innerText = err;
                     document.body.style.backgroundColor = "#FFFFFF";
                 });
         }
