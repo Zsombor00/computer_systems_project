@@ -1,0 +1,6 @@
+<launch>
+  <arg name="path_option" default="0.4"/>
+  <node name="myagv_teleop_dual_mode" pkg="myagv_teleop" type="myagv_teleop_dual_mode.py" output="screen">
+    <param name="path_option" value="$(arg path_option)"/>
+  </node>
+</launch> 

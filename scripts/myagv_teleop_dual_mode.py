@@ -92,7 +92,8 @@ def move_agv(pub):
 
     # Movement logic
     distance = 10  # Forward distance
-    speed = 1
+    speed = rospy.get_param('~path_option',0.4)
+    print(speed)
     duration = distance / speed
 
     move_cmd.linear.x = speed

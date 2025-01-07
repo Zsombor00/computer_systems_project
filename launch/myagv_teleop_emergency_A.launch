@@ -1,5 +1,0 @@
-<launch>
-  <node name="myagv_teleop_emergency_A" pkg="myagv_teleop" type="myagv_teleop_emergency_A.py" output="screen">
-  </node>
-</launch> 
-
