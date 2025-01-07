@@ -14,6 +14,10 @@ stop_robot = False
 hog = cv2.HOGDescriptor()
 hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
+def log_robot(message):
+    with open("/home/ubuntu/group2/myagv_ros/src/htmlFolder/log.txt","w") as file:
+        file.write(message)
+
 def person_detector():
     """
     Function to detect persons using HOG and publish stop signal.
@@ -93,15 +97,18 @@ def move_agv(pub):
     # Movement logic
     distance = 10  # Forward distance
     speed = rospy.get_param('~path_option',0.4)
-    print(speed)
     duration = distance / speed
 
+    log_robot("Initiating robot...")
+
     move_cmd.linear.x = speed
+
+    
 
     start_time = rospy.Time.now().to_sec()
     while rospy.Time.now().to_sec() - start_time < duration:
         if stop_robot:  # Check if the stop signal is active
-            rospy.loginfo("Stopping AGV due to detected person.")
+            log_robot("Stopping AGV due to detected person.")
             # Stop the robot
             move_cmd.linear.x = 0.0
             pub.publish(move_cmd)
@@ -111,10 +118,10 @@ def move_agv(pub):
 
             # Recheck stop signal
             if not stop_robot:
-                rospy.loginfo("Resuming AGV movement.")
+                log_robot("Resuming AGV movement.")
                 move_cmd.linear.x = speed
             else:
-                rospy.loginfo("Person still detected. Waiting.")
+                log_robot("Person still detected. Waiting.")
                 continue
 
         pub.publish(move_cmd)
@@ -124,7 +131,8 @@ def move_agv(pub):
     move_cmd.linear.x = 0.0
     pub.publish(move_cmd)
     rospy.sleep(1)
-    rospy.loginfo("AGV movement completed.")
+    log_robot("AGV movement completed.")
+    
 
 if __name__ == '__main__':
     try:
@@ -142,5 +150,6 @@ if __name__ == '__main__':
 
         # Run the teleop control
         move_agv(cmd_vel_pub)
+        log_robot(" ")
     except rospy.ROSInterruptException:
         pass

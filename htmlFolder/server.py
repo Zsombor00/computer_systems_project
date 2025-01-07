@@ -28,7 +28,6 @@ class MyHandler(SimpleHTTPRequestHandler):
                 self.send_response(500)
                 self.end_headers()
                 self.wfile.write(f"Error running emergency mode script: {e}".encode())
-        
         else:
             # Serve other files like the HTML
             super().do_GET()

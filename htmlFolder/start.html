@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mode Selector</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <h1>Select Speed Mode</h1>
@@ -12,13 +13,14 @@
 
     <p id="modeStatus" style="margin-top: 30px; font-size: 20px; color: #555;"></p>
     <p id="robotStatus">Robot is currently: Not moving</p>
+    <p id="log">Loading...</p>
 
-    <button class="stop" onclick="emergencyStop()">Emergency Stop!</button>
+    <button id="emergencyButton" class="stop" onclick="emergencyStop()">Emergency Stop!</button>
 
     <script>
         function setEmergencyMode() {
             document.getElementById('modeStatus').innerText = "Emergency Mode is now active!";
-            document.body.style.backgroundColor = "#FFCCCC";
+            document.body.style.backgroundColor = "#FEFFCC";
             document.getElementById('robotStatus').innerText = "Robot is currently: Moving";
         
             // Send a request to the server to run the emergency script
@@ -67,29 +69,55 @@
                 });
         }
 
-        function emergencyStop() {
-            document.getElementById('modeStatus').innerText = "Emergency Stop Activated!";
-            //document.body.style.backgroundColor = "#FF0000"; // Red for immediate stop
-            document.getElementById('robotStatus').innerText = "Robot is currently: Stopped";
-            
-            // Send a request to the server to stop the robot
-            fetch("http://localhost:8001/emergency-stop")
-                .then(response => {
-                    if (response.ok) {
-                        return response.text();
-                    } else {
-                        throw new Error("Failed to execute emergency stop.");
-                    }
-                })
-                .then(data => {
-                    document.getElementById('modeStatus').innerText = data;
-                    document.body.style.backgroundColor = "#FFFFFF";
-                })
-                .catch(err => {
-                   // document.getElementById('modeStatus').innerText = err;
-                    document.body.style.backgroundColor = "#FFFFFF";
-                });
+        let isEmergencyActive = false;
+        function emergencyStop() {const button = document.getElementById("emergencyButton");
+            const modeStatus = document.getElementById("modeStatus");
+            const robotStatus = document.getElementById("robotStatus");
+            if (isEmergencyActive) {
+                // Disable emergency mode
+                document.body.style.backgroundColor = "#FFFFFF"; // Reset background to white
+                modeStatus.innerText = "Emergency stop aborted. Back to normal.";
+                robotStatus.innerText = "Robot is currently: Ready";
+                button.innerText = "Emergency Stop!"; // Change button text
+                button.style.backgroundColor = "darkred";
+                button.style.color = "white";
+                isEmergencyActive = false;
+
+                // Notify server to abort emergency
+                fetch("http://localhost:8001/abort-emergency")
+                    .catch(() => console.error("Failed to send abort-emergency request"));
+            } else {
+                // Enable emergency mode
+                document.body.style.backgroundColor = "#FFCCCC"; // Red for emergency
+                modeStatus.innerText = "Emergency Stop Activated!";
+                robotStatus.innerText = "Robot is currently: Stopped";
+                button.innerText = "Abort emergency"; // Change button text
+                button.style.backgroundColor = "#798EF7";
+                button.style.color = "black";
+                isEmergencyActive = true;
+
+                // Notify server to activate emergency
+                fetch("http://localhost:8001/emergency-stop")
+                    .catch(() => console.error("Failed to send emergency-stop request"));
+            }
         }
+
+        async function fetchLog(){
+            try{
+                const response = await fetch("log.txt");
+                if(!response.ok){
+                    throw new Error("Failed to fetch log")
+                }
+                const text = await response.text();
+                document.getElementById("log").textContent = text;
+            }
+            catch (error){
+                document.getElementById("log").textContent = "Error getting log.";
+            }
+        }
+
+        setInterval(fetchLog,1000);
+        fetchLog();
     </script>
 </body>
 </html>
