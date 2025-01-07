@@ -1,110 +1,145 @@
 #!/usr/bin/env python
-
 import rospy
 from geometry_msgs.msg import Twist
+from std_msgs.msg import Bool
+import threading
 import time
-from std_msgs.msg import String
-import sys
-print("Python vers", sys.version)
+import cv2
+import numpy as np
 
-# Initialize the ROS node
-rospy.init_node('move_agv', anonymous=True)
-log_pub_movement = rospy.Publisher('/movementlogs', String, queue_size=10)
-log_pub_progress = rospy.Publisher('/progresslogs', String, queue_size=10)
-pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-# Set rate to 10 Hz
-rate = rospy.Rate(10)
+# Global stop flag
+stop_robot = False
 
-# Global variables
-speed_multiplier = 1.0
-selected_route = "A"
+# Initialize HOG descriptor for person detection
+hog = cv2.HOGDescriptor()
+hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
-def log_and_publish_movement(msg):
-    rospy.loginfo(msg)
-    log_pub_movement.publish(msg)
-
-def log_and_publish_progress(msg):
-    rospy.loginfo(msg)
-    log_pub_progress.publish(msg)
-
-
-def rotate_to_face(direction):
+def person_detector():
     """
-    Rotate the robot to face the desired direction.
-    :param direction: The target direction ("forward", "right", "left", or "backward")
+    Function to detect persons using HOG and publish stop signal.
     """
-    rotate_cmd = Twist()
-    angular_speed = 0.5  # Adjust as needed
-    duration = 0  # Duration to rotate (in seconds)
+    global stop_robot
 
-    if direction == "forward":
-        duration = 0  # No rotation needed
-    elif direction == "left":
-        duration = 6  # Adjust this to achieve a 90-degree right turn
-    elif direction == "right":
-        duration = 6  # Adjust this to achieve a 90-degree left turn
-        angular_speed = -0.5  # Rotate counter-clockwise
-    elif direction == "backward":
-        duration = 12  # Adjust this to achieve a 180-degree turn
+    # Initialize ROS node for detection
+    stop_pub = rospy.Publisher('/stop_signal', Bool, queue_size=10)
+    
+    # Open webcam video stream
+    cap = cv2.VideoCapture(0)
 
-    # Rotate the robot
-    rotate_cmd.angular.z = angular_speed
-    start_time = rospy.Time.now().to_sec()
-    while rospy.Time.now().to_sec() - start_time < duration:
-        pub.publish(rotate_cmd)
-        rate.sleep()
+    # Set video output parameters (if needed)
+    out = cv2.VideoWriter(
+        'output.avi',
+        cv2.VideoWriter_fourcc(*'MJPG'),
+        15.,
+        (640,480)
+    )
 
-    # Stop rotation
-    rotate_cmd.angular.z = 0.0
-    pub.publish(rotate_cmd)
+    while not rospy.is_shutdown():
+        ret, frame = cap.read()
+        if not ret:
+            continue
+        
+        # Resize frame for faster detection
+        frame = cv2.resize(frame, (640, 480))
 
-def move_agv():    
-    # Define Twist message
+        # Detect people in the image
+        boxes, _ = hog.detectMultiScale(frame, winStride=(8,8))
+
+        # Convert boxes to the format (xA, yA, xB, yB)
+        boxes = np.array([[x, y, x + w, y + h] for (x, y, w, h) in boxes])
+
+        # If any person is detected, send stop signal
+        if len(boxes) > 0:
+            stop_pub.publish(True)
+        else:
+            stop_pub.publish(False)
+
+        # Draw the bounding boxes on the frame
+        for (xA, yA, xB, yB) in boxes:
+            cv2.rectangle(frame, (xA, yA), (xB, yB), (0, 255, 0), 2)
+        
+        # Optional: Write the frame to output file
+        out.write(frame.astype('uint8'))
+
+        # Display the frame
+        cv2.imshow('Person Detection', frame)
+
+        # Stop the loop if 'q' is pressed
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Release resources when done
+    cap.release()
+    out.release()
+    cv2.destroyAllWindows()
+
+def stop_callback(msg):
+    """
+    Callback to handle stop signal updates.
+    """
+    global stop_robot
+    stop_robot = msg.data
+
+def move_agv(pub):
+    """
+    AGV movement control script with stop signal integration.
+    """
+    global stop_robot
+    
+    rospy.Subscriber('/stop_signal', Bool, stop_callback)
+    rate = rospy.Rate(10)  # 10 Hz
     move_cmd = Twist()
 
-    # Define routes
-    routes = {
-        "A": [
-            {"distance": 6.0, "linear_x": 0.4, "linear_y": 0.0, "direction": "forward", "description": "Moving forward"}  # Forward
-        ]
-    }
+    # Movement logic
+    distance = 10  # Forward distance
+    speed = 1
+    duration = distance / speed
 
-    # Get the selected route's movements
-    movements = routes[selected_route]
+    move_cmd.linear.x = speed
 
-    for move in movements:
-        distance = move["distance"]
-        speed_x = move["linear_x"]
-        speed_y = move["linear_y"]
-        direction = move["direction"]
-        description = move["description"]
-
-        # Rotate to face the direction of movement
-        rotate_to_face(direction)
-
-        # Calculate duration based on speed
-        duration = distance / abs(speed_x * speed_multiplier if speed_x != 0 else speed_y * speed_multiplier)
-        
-        # Adjust speed with multiplier
-        move_cmd.linear.x = speed_x * speed_multiplier
-        move_cmd.linear.y = speed_y * speed_multiplier
-
-        # log_and_publish_movement(f"Starting: {description} for {distance} meters at speed multiplier {speed_multiplier}")
-        
-        start_time = rospy.Time.now().to_sec()
-
-        # Publish movement commands
-        while rospy.Time.now().to_sec() - start_time < duration:
+    start_time = rospy.Time.now().to_sec()
+    while rospy.Time.now().to_sec() - start_time < duration:
+        if stop_robot:  # Check if the stop signal is active
+            rospy.loginfo("Stopping AGV due to detected person.")
+            # Stop the robot
+            move_cmd.linear.x = 0.0
             pub.publish(move_cmd)
-            rate.sleep()
+            
+            # Wait for 5 seconds
+            rospy.sleep(5)
 
-        # Stop the robot
-        move_cmd.linear.x = 0.0
-        move_cmd.linear.y = 0.0
+            # Recheck stop signal
+            if not stop_robot:
+                rospy.loginfo("Resuming AGV movement.")
+                move_cmd.linear.x = speed
+            else:
+                rospy.loginfo("Person still detected. Waiting.")
+                continue
+
         pub.publish(move_cmd)
+        rate.sleep()
+
+    # Stop the robot after reaching the destination
+    move_cmd.linear.x = 0.0
+    pub.publish(move_cmd)
+    rospy.sleep(1)
+    rospy.loginfo("AGV movement completed.")
 
 if __name__ == '__main__':
     try:
-        move_agv()
+        # Initialize ROS node
+        rospy.init_node('agv_control', anonymous=True)
+        
+        # Publishers
+        stop_pub = rospy.Publisher('/stop_signal', Bool, queue_size=10)
+        cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+
+        # Run person detector in a separate thread
+        detection_thread = threading.Thread(target=person_detector)
+        detection_thread.daemon = True
+        detection_thread.start()
+
+        # Run the teleop control
+        move_agv(cmd_vel_pub)
     except rospy.ROSInterruptException:
         pass
