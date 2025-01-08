@@ -56,3 +56,6 @@ if __name__ == '__main__':
         move_agv()
     except rospy.ROSInterruptException:
         pass
+
+
+

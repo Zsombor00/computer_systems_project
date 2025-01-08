@@ -6,10 +6,13 @@ import threading
 import time
 import cv2
 import numpy as np
+import syslog
 
 # Global stop flag
 stop_robot = False
 
+# Opens syslog connection. Identifier, Add Log Pid, Only visible to current user
+syslog.openlog(ident="MailDeliveryRobot", logoption=syslog.LOG_PID, facility=syslog.LOG_USER) 
 # Initialize HOG descriptor for person detection
 hog = cv2.HOGDescriptor()
 hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
@@ -100,6 +103,7 @@ def move_agv(pub):
     duration = distance / speed
 
     log_robot("Initiating robot...")
+    syslog.syslog(syslog.LOG_INFO, "Robot is being initialized")
 
     move_cmd.linear.x = speed
 
@@ -109,6 +113,7 @@ def move_agv(pub):
     while rospy.Time.now().to_sec() - start_time < duration:
         if stop_robot:  # Check if the stop signal is active
             log_robot("Stopping AGV due to detected person.")
+            syslog.syslog(syslog.LOG_INFO, "Robot detected a person and has temporary stopped")
             # Stop the robot
             move_cmd.linear.x = 0.0
             pub.publish(move_cmd)
@@ -119,9 +124,11 @@ def move_agv(pub):
             # Recheck stop signal
             if not stop_robot:
                 log_robot("Resuming AGV movement.")
+                syslog.syslog(syslog.LOG_INFO, "Robot has started moving again after temporary stop")
                 move_cmd.linear.x = speed
             else:
                 log_robot("Person still detected. Waiting.")
+                syslog.syslog(syslog.LOG_INFO, "Still detecting a person, keep waiting")
                 continue
 
         pub.publish(move_cmd)
@@ -132,6 +139,7 @@ def move_agv(pub):
     pub.publish(move_cmd)
     rospy.sleep(1)
     log_robot("AGV movement completed.")
+    syslog.syslog(syslog.LOG_INFO, "Robot has completed its route")
     
 
 if __name__ == '__main__':
