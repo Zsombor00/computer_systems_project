@@ -18,15 +18,17 @@ syslog.openlog(ident="MailDeliveryRobot", logoption=syslog.LOG_PID, facility=sys
 hog = cv2.HOGDescriptor()
 hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
-# Log function for "info" level messages
 def log_robot(message):
     log_path = "/home/ubuntu/group2/myagv_ros/src/htmlFolder/log.txt"
     try:
-        with open(log_path,"w") as file:
+        with open(log_path,"w", encoding="utf-8") as file:
             file.write(message)
-        syslog.syslog(syslog.LOG_INFO, message)
     except Exception as e:
         syslog.syslog(syslog.LOG_ERR, "Failed to log messages: {e}")
+
+def system_logging_info(message):
+    syslog.syslog(syslog.LOG_INFO, message)
+
     
 
 def person_detector():
@@ -40,6 +42,8 @@ def person_detector():
     
     # Open webcam video stream
     cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        syslog.syslog(syslog.LOG_CRIT, "Critical: Camera initialization failed!")
 
     # Set video output parameters (if needed)
     out = cv2.VideoWriter(
@@ -108,10 +112,13 @@ def move_agv(pub):
     # Movement logic
     distance = 10  # Forward distance
     speed = rospy.get_param('~path_option',0.4)
+    if not  (0.4 < speed <= 1.0): # Ensure no crazy speed input can happen.
+        speed = 0.4
     duration = distance / speed
     move_cmd.linear.x = speed
 
     log_robot("Initiating robot...")
+    system_logging_info("MailDeliveryRobot started successfully.")
 
     start_time = rospy.Time.now().to_sec()
     while rospy.Time.now().to_sec() - start_time < duration:
@@ -127,6 +134,7 @@ def move_agv(pub):
             # Recheck stop signal
             if not stop_robot:
                 log_robot("Resuming AGV movement.")
+                system_logging_info("Resuming AGV movement.")
                 move_cmd.linear.x = speed
             else:
                 log_robot("Person still detected. Waiting.")
@@ -140,6 +148,7 @@ def move_agv(pub):
     pub.publish(move_cmd)
     rospy.sleep(1)
     log_robot("AGV movement completed.")
+    system_logging_info("AGV movement completed.")
     
 
 if __name__ == '__main__':
@@ -159,6 +168,7 @@ if __name__ == '__main__':
         # Run the teleop control
         move_agv(cmd_vel_pub)
         log_robot(" ")
+        syslog.syslog(syslog.LOG_INFO, "MailDeliveryRobot finished running successfully.")
         syslog.closelog()
     except rospy.ROSInterruptException:
         syslog.syslog(syslog.LOG_ERR, "Starting up ROS failed. Program exit.")
