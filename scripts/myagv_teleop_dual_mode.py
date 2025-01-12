@@ -13,13 +13,21 @@ stop_robot = False
 
 # Opens syslog connection. Identifier, Add Log Pid, Only visible to current user
 syslog.openlog(ident="MailDeliveryRobot", logoption=syslog.LOG_PID, facility=syslog.LOG_USER) 
+
 # Initialize HOG descriptor for person detection
 hog = cv2.HOGDescriptor()
 hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
+# Log function for "info" level messages
 def log_robot(message):
-    with open("/home/ubuntu/group2/myagv_ros/src/htmlFolder/log.txt","w") as file:
-        file.write(message)
+    log_path = "/home/ubuntu/group2/myagv_ros/src/htmlFolder/log.txt"
+    try:
+        with open(log_path,"w") as file:
+            file.write(message)
+        syslog.syslog(syslog.LOG_INFO, message)
+    except Exception as e:
+        syslog.syslog(syslog.LOG_ERR, "Failed to log messages: {e}")
+    
 
 def person_detector():
     """
@@ -101,19 +109,14 @@ def move_agv(pub):
     distance = 10  # Forward distance
     speed = rospy.get_param('~path_option',0.4)
     duration = distance / speed
-
-    log_robot("Initiating robot...")
-    syslog.syslog(syslog.LOG_INFO, "Robot is being initialized")
-
     move_cmd.linear.x = speed
 
-    
+    log_robot("Initiating robot...")
 
     start_time = rospy.Time.now().to_sec()
     while rospy.Time.now().to_sec() - start_time < duration:
         if stop_robot:  # Check if the stop signal is active
             log_robot("Stopping AGV due to detected person.")
-            syslog.syslog(syslog.LOG_INFO, "Robot detected a person and has temporary stopped")
             # Stop the robot
             move_cmd.linear.x = 0.0
             pub.publish(move_cmd)
@@ -124,11 +127,9 @@ def move_agv(pub):
             # Recheck stop signal
             if not stop_robot:
                 log_robot("Resuming AGV movement.")
-                syslog.syslog(syslog.LOG_INFO, "Robot has started moving again after temporary stop")
                 move_cmd.linear.x = speed
             else:
                 log_robot("Person still detected. Waiting.")
-                syslog.syslog(syslog.LOG_INFO, "Still detecting a person, keep waiting")
                 continue
 
         pub.publish(move_cmd)
@@ -139,7 +140,6 @@ def move_agv(pub):
     pub.publish(move_cmd)
     rospy.sleep(1)
     log_robot("AGV movement completed.")
-    syslog.syslog(syslog.LOG_INFO, "Robot has completed its route")
     
 
 if __name__ == '__main__':
@@ -159,5 +159,8 @@ if __name__ == '__main__':
         # Run the teleop control
         move_agv(cmd_vel_pub)
         log_robot(" ")
+        syslog.closelog()
     except rospy.ROSInterruptException:
+        syslog.syslog(syslog.LOG_ERR, "Starting up ROS failed. Program exit.")
+        syslog.closelog()
         pass
