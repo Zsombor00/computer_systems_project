@@ -128,8 +128,10 @@ def move_agv(pub):
             move_cmd.linear.x = 0.0
             pub.publish(move_cmd)
             
+            duration = duration + 5
             # Wait for 5 seconds
             rospy.sleep(5)
+            
 
             # Recheck stop signal
             if not stop_robot:
